@@ -1,0 +1,50 @@
+# Production stack: Caddy terminates TLS and proxies to the API.
+#
+# Caddy fetches and renews a Let's Encrypt certificate on its own, so there is
+# no cert to manage and nothing to rotate by hand.
+services:
+  api:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    environment:
+      OPEN_ROUTINE_ENVIRONMENT: production
+      OPEN_ROUTINE_LOG_LEVEL: INFO
+      # SQLite on a named volume: it survives container rebuilds and reboots.
+      # The dataset is one department-semester and is re-ingestible from the
+      # published PDF, so this needs no replication.
+      OPEN_ROUTINE_DATABASE_URL: sqlite+aiosqlite:////data/open_routine.db
+      OPEN_ROUTINE_ADMIN_TOKEN: ${OPEN_ROUTINE_ADMIN_TOKEN:?set in .env}
+      OPEN_ROUTINE_CORS_ORIGINS: ${OPEN_ROUTINE_CORS_ORIGINS:-*}
+    volumes:
+      - routine-data:/data
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request,sys;sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health').status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      ROUTINE_DOMAIN: ${ROUTINE_DOMAIN:?set in .env}
+      ACME_EMAIL: ${ACME_EMAIL:-}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  routine-data:
+  caddy-data:
+  caddy-config:

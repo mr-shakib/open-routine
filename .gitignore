@@ -59,3 +59,9 @@ docs/
 #   gh auth refresh -s workflow
 #   git add -f .github/workflows && git commit && git push
 .github/workflows/
+
+# ---------- Deployment secrets ----------
+deploy/*.pem
+deploy/.env
+deploy/.admin-token
+*.pem

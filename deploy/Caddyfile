@@ -1,0 +1,27 @@
+{
+	# Empty is fine: Caddy registers an ACME account without contact details.
+	email {$ACME_EMAIL}
+}
+
+{$ROUTINE_DOMAIN} {
+	encode zstd gzip
+
+	# The routine is public data, so no auth here. The write endpoints under
+	# /api/v1/admin are guarded by a bearer token in the application itself.
+	reverse_proxy api:8000
+
+	header {
+		# The app talks to this over HTTPS only.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+
+	log {
+		output file /data/access.log {
+			roll_size 10MiB
+			roll_keep 5
+		}
+	}
+}

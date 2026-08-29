@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Ingests the DIU class routine spreadsheet and serves it as a structured API"
 readme = "README.md"
 requires-python = ">=3.11"
-license = { file = "../LICENSE" }
+license = "MIT"
 keywords = ["routine", "timetable", "diu", "fastapi"]
 
 dependencies = [
