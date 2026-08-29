@@ -2,7 +2,7 @@
 
 Flutter client. Android and iOS. Offline-first: every query runs against a local database.
 
-> **Status: implemented.** Four views, offline-first sync, 56 tests. `flutter analyze` clean, debug APK builds.
+> **Status: working on device.** Four views, offline-first sync, 56 tests. Verified on a physical Android device against the real published routine — including offline operation with the backend stopped.
 
 ## Stack
 
@@ -89,8 +89,21 @@ dart run build_runner build --delete-conflicting-outputs
 flutter run --dart-define=OPEN_ROUTINE_API=http://127.0.0.1:8000
 ```
 
-On an Android emulator the host is reached at `10.0.2.2`; `RoutineApi` rewrites
-`localhost` automatically, so the default works there too.
+**Reaching the backend from a device.** An explicit `--dart-define=OPEN_ROUTINE_API`
+is honoured verbatim; only the compile-time default gets the emulator rewrite
+(`localhost` → `10.0.2.2`), because only you know how your device reaches the host.
+
+*Physical device over USB* — bridge the port, no Wi-Fi needed:
+
+```bash
+adb reverse tcp:8000 tcp:8000
+flutter run --dart-define=OPEN_ROUTINE_API=http://127.0.0.1:8000
+```
+
+*Physical device on the same Wi-Fi* — pass the host's LAN address instead.
+
+Debug builds permit cleartext HTTP (`android/app/src/debug/AndroidManifest.xml`)
+so a local backend works; release builds keep Android's strict default.
 
 ```bash
 flutter test        # 56 tests

@@ -14,6 +14,12 @@ class AppConfig {
     defaultValue: 'http://localhost:8000',
   );
 
+  /// Whether [baseUrl] was supplied at build time rather than defaulted.
+  ///
+  /// Lets the client honour an explicit address verbatim instead of applying
+  /// the emulator convenience rewrite to it.
+  static const bool apiUrlWasProvided = bool.hasEnvironment('OPEN_ROUTINE_API');
+
   static const String apiPrefix = '/api/v1';
 
   /// Department whose routine this build shows.

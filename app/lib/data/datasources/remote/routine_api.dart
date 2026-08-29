@@ -29,13 +29,19 @@ class RoutineApi {
 
   final Dio _dio;
 
-  /// Base URL adjusted for the platform.
+  /// Base URL for this build.
   ///
-  /// An Android emulator cannot see the host's `localhost`; 10.0.2.2 is the
-  /// documented alias for it.
+  /// An explicitly supplied `--dart-define=OPEN_ROUTINE_API=...` is honoured
+  /// verbatim, because only the caller knows how their device reaches the
+  /// backend: a physical device over `adb reverse` wants `127.0.0.1`, one on
+  /// the same Wi-Fi wants the host's LAN address.
+  ///
+  /// The convenience rewrite applies *only* to the compile-time default, where
+  /// "localhost" would otherwise mean the emulator itself rather than the
+  /// machine hosting it.
   static String get resolvedBaseUrl {
     var base = AppConfig.baseUrl;
-    if (!kIsWeb && Platform.isAndroid) {
+    if (!AppConfig.apiUrlWasProvided && !kIsWeb && Platform.isAndroid) {
       base = base
           .replaceFirst('localhost', '10.0.2.2')
           .replaceFirst('127.0.0.1', '10.0.2.2');
