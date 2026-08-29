@@ -11,7 +11,7 @@ from pathlib import Path
 from open_routine.core.logging import configure_logging
 from open_routine.db.base import Base
 from open_routine.db.session import dispose_engine, get_engine, get_sessionmaker
-from open_routine.ingestion import ingest_workbook
+from open_routine.ingestion import ingest_pdf
 from open_routine.ingestion.normalizer import split_name_initial
 from open_routine.services import teacher_service
 
@@ -24,13 +24,12 @@ async def _create_tables() -> None:
 async def _ingest(args: argparse.Namespace) -> int:
     await _create_tables()
     async with get_sessionmaker()() as session:
-        report = await ingest_workbook(
+        report = await ingest_pdf(
             session,
             args.path,
             department=args.department,
             version=args.version,
             semester=args.semester,
-            sheet=args.sheet,
             activate=not args.no_activate,
         )
     print(json.dumps(report.as_dict(), indent=2))
@@ -85,12 +84,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="open-routine", description="Open Routine backend tools")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p_ingest = sub.add_parser("ingest", help="Ingest a routine .xlsx")
+    p_ingest = sub.add_parser("ingest", help="Ingest a published routine PDF")
     p_ingest.add_argument("path", type=Path)
     p_ingest.add_argument("--department", default="cse")
-    p_ingest.add_argument("--version", required=True, help="Routine revision, e.g. 5.1")
+    p_ingest.add_argument(
+        "--version",
+        default=None,
+        help="Routine revision. Read from the document header ('Version V5') if omitted.",
+    )
     p_ingest.add_argument("--semester", default=None)
-    p_ingest.add_argument("--sheet", default=None, help="Worksheet name (default: first)")
     p_ingest.add_argument(
         "--no-activate", action="store_true", help="Import without making it live"
     )

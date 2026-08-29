@@ -8,7 +8,7 @@ from pathlib import Path
 from fastapi import APIRouter, File, Form, UploadFile
 
 from open_routine.api.deps import AdminDep, SessionDep
-from open_routine.ingestion import ingest_workbook
+from open_routine.ingestion import ingest_pdf
 from open_routine.schemas import IngestionResponse
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -18,9 +18,11 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 async def ingest(
     session: SessionDep,
     _: AdminDep,
-    file: UploadFile = File(description="The published .xlsx routine."),
+    file: UploadFile = File(description="The published routine PDF."),
     department: str = Form("cse"),
-    version: str = Form(description="Routine revision, e.g. '5.1'."),
+    version: str | None = Form(
+        None, description="Routine revision. Read from the PDF header if omitted."
+    ),
     semester: str | None = Form(None),
     activate: bool = Form(True),
 ) -> IngestionResponse:
@@ -28,13 +30,15 @@ async def ingest(
 
     The import is all-or-nothing: the new revision only becomes active once every
     cell has been parsed and written, so clients never see a partial routine.
+
+    The version is read from the document's own header unless given explicitly.
     """
-    suffix = Path(file.filename or "routine.xlsx").suffix or ".xlsx"
+    suffix = Path(file.filename or "routine.pdf").suffix or ".pdf"
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
         tmp.write(await file.read())
         tmp_path = Path(tmp.name)
     try:
-        report = await ingest_workbook(
+        report = await ingest_pdf(
             session,
             tmp_path,
             department=department,

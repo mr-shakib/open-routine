@@ -10,7 +10,7 @@ Type your batch — `60_C` — and your week appears. Instantly, offline, with n
 
 ## What it does
 
-DIU publishes its class routine as one enormous spreadsheet covering every batch, teacher, room and time slot. Reading your own five classes out of it is miserable. Open Routine turns that spreadsheet into four instant queries:
+DIU publishes its class routine as one enormous PDF covering every batch, teacher, room and time slot — 2,000 classes across 10 pages. Reading your own five out of it is miserable. Open Routine turns that PDF into four instant queries:
 
 | View | You give | You get |
 |---|---|---|
@@ -28,11 +28,11 @@ There is an existing app that does this well. It is also closed source, wraps a 
 ## Architecture
 
 ```
-DIU routine spreadsheet (.xlsx, versioned per semester)
+DIU routine PDF (published per semester, versioned)
             │
             ▼
    backend/  ·  FastAPI + Python
-     ingestion: grid walk → parse cells → flat class records
+     ingestion: read PDF tables → parse cells → flat class records
      API:       typed REST, auto-generated OpenAPI
             │
             │  one snapshot download, cached until the routine version changes

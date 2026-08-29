@@ -1,6 +1,6 @@
-"""Turn a routine spreadsheet into rows, and swap it in atomically.
+"""Turn the published routine PDF into rows, and swap it in atomically.
 
-    .xlsx -> validate lattice -> walk grid -> parse cells -> normalise -> swap
+    .pdf -> read tables -> validate lattice -> parse cells -> normalise -> swap
 
 The swap is the important part. A new revision is written to a *new* routine row
 and only becomes active once the entire import has succeeded, so a client never
@@ -18,9 +18,9 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from open_routine.core.errors import IngestionError
-from open_routine.ingestion.cell_parser import parse_cell
-from open_routine.ingestion.grid_reader import RawCell, read_grid
+from open_routine.ingestion.cell_parser import is_non_class, parse_cell
 from open_routine.ingestion.lattice import slot_bounds
+from open_routine.ingestion.pdf_reader import RawCell, read_pdf
 from open_routine.models import ClassSession, Routine
 
 logger = logging.getLogger(__name__)
@@ -34,8 +34,11 @@ class IngestionReport:
     version: str
     cells_read: int = 0
     sessions_created: int = 0
+    reserved_cells: int = 0
     skipped_cells: list[dict[str, object]] = field(default_factory=list)
     routine_id: int | None = None
+    effective_from: str | None = None
+    days_covered: dict[str, int] = field(default_factory=dict)
 
     @property
     def skipped_count(self) -> int:
@@ -45,11 +48,14 @@ class IngestionReport:
         return {
             "department": self.department,
             "version": self.version,
+            "effective_from": self.effective_from,
             "routine_id": self.routine_id,
             "cells_read": self.cells_read,
             "sessions_created": self.sessions_created,
+            "days_covered": self.days_covered,
+            "reserved": self.reserved_cells,
             "skipped": self.skipped_count,
-            # Bounded: a broken sheet must not produce an unbounded response.
+            # Bounded: a broken document must not produce an unbounded response.
             "skipped_sample": self.skipped_cells[:20],
         }
 
@@ -62,16 +68,21 @@ def build_sessions(cells: list[RawCell], report: IngestionReport) -> list[dict[s
     """
     rows: list[dict[str, object]] = []
     for cell in cells:
-        parsed = parse_cell(cell.text)
+        # A room held as "Reserved" is deliberate, not a broken cell. Counting
+        # it separately keeps the skipped list meaning "needs a human look".
+        if is_non_class(cell.course_text):
+            report.reserved_cells += 1
+            continue
+
+        parsed = parse_cell(cell.course_text, cell.teacher_text)
         if parsed is None:
             report.skipped_cells.append(
                 {
-                    "row": cell.row,
-                    "column": cell.column,
+                    "page": cell.page,
                     "day": cell.day,
                     "time_slot": cell.time_slot,
                     "room": cell.room,
-                    "text": cell.text[:120],
+                    "text": cell.course_text[:120],
                 }
             )
             continue
@@ -81,7 +92,7 @@ def build_sessions(cells: list[RawCell], report: IngestionReport) -> list[dict[s
             {
                 "day": cell.day,
                 "time_slot": cell.time_slot,
-                "room": parsed.room_override or cell.room,
+                "room": cell.room,
                 "room_type": cell.room_type,
                 "course_code": parsed.course_code,
                 "course_title": None,
@@ -97,31 +108,42 @@ def build_sessions(cells: list[RawCell], report: IngestionReport) -> list[dict[s
     return rows
 
 
-async def ingest_workbook(
+async def ingest_pdf(
     session: AsyncSession,
     path: str | Path,
     *,
-    department: str,
-    version: str,
+    department: str = "cse",
+    version: str | None = None,
     semester: str | None = None,
-    sheet: str | None = None,
     activate: bool = True,
 ) -> IngestionReport:
-    """Ingest one routine workbook and, by default, make it the active revision."""
+    """Ingest one published routine PDF and make it the active revision.
+
+    ``version`` is read from the document's own header ("Version V5") unless
+    given explicitly, so an operator neither retypes it nor mistypes it.
+    """
     department = department.strip().lower()
-    version = version.strip()
-    if not department or not version:
-        raise IngestionError("Both a department and a routine version are required")
+    if not department:
+        raise IngestionError("A department is required")
 
-    report = IngestionReport(department=department, version=version)
+    cells, info = read_pdf(path)
 
-    cells = read_grid(path, sheet=sheet)
+    resolved_version = (version or info.version or "").strip()
+    if not resolved_version:
+        raise IngestionError(
+            "No routine version given, and none found in the document header. Pass one explicitly.",
+            detail={"title": info.title},
+        )
+
+    report = IngestionReport(department=department, version=resolved_version)
+    report.effective_from = info.effective_from
     report.cells_read = len(cells)
     if not cells:
         raise IngestionError(
-            "No populated cells found. The sheet appears to be empty.",
+            "No populated cells found. The document appears to hold no classes.",
             detail={"path": str(path)},
         )
+    version = resolved_version
 
     rows = build_sessions(cells, report)
     if not rows:
@@ -130,6 +152,12 @@ async def ingest_workbook(
             "not what the parser expects.",
             detail={"cells_read": report.cells_read, "sample": report.skipped_cells[:5]},
         )
+
+    counts: dict[str, int] = {}
+    for row in rows:
+        day = str(row["day"])
+        counts[day] = counts.get(day, 0) + 1
+    report.days_covered = counts
 
     routine = await _replace_routine(
         session,

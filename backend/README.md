@@ -1,6 +1,6 @@
 # Open Routine — Backend
 
-FastAPI service. Two jobs: **ingest** the DIU routine spreadsheet into structured records, and **serve** them to the app.
+FastAPI service. Two jobs: **ingest** the published DIU routine PDF into structured records, and **serve** them to the app.
 
 ## Quick start
 
@@ -12,7 +12,7 @@ pip install -e ".[dev]"
 cp .env.example .env          # then set OPEN_ROUTINE_ADMIN_TOKEN
 
 open-routine init-db
-open-routine ingest routine.xlsx --department cse --version 5.1
+open-routine ingest "CSE Class Routine V5 Summer-2026.pdf"
 open-routine load-teachers teachers.json      # optional faculty directory
 
 uvicorn open_routine.main:app --reload
@@ -20,13 +20,9 @@ uvicorn open_routine.main:app --reload
 
 Interactive docs at <http://localhost:8000/docs>.
 
-No routine file to hand? The test fixture builder makes a valid one:
-
-```bash
-python -c "import sys; sys.path.insert(0,'tests'); from pathlib import Path; \
-from fixtures.build import build_workbook; build_workbook(Path('sample.xlsx'))"
-open-routine ingest sample.xlsx --department cse --version 0.1
-```
+The version and effective date are read from the document's own header
+(`Version V5`, `Effective From: Saturday 11 July, 2026`), so nobody retypes them.
+Pass `--version` only to override.
 
 ## Stack
 
@@ -36,7 +32,7 @@ open-routine ingest sample.xlsx --department cse --version 0.1
 | Validation | Pydantic v2 | the data model *is* the schema |
 | ORM | SQLAlchemy 2.0 (async) | mature, typed |
 | Migrations | Alembic | routine schemas will evolve |
-| Spreadsheet | openpyxl | exposes merged-cell ranges, which we need |
+| PDF | pdfplumber | the routine is published as a PDF with a real text layer and real ruling lines |
 | Database | SQLite by default, Postgres optional | the dataset is small; SQLite needs no server |
 | Testing | pytest + httpx | |
 | Lint / types | ruff, mypy --strict | both clean, enforced in CI |
@@ -57,8 +53,8 @@ backend/
 │   ├── schemas/             Pydantic wire models
 │   ├── ingestion/           ← the heart
 │   │   ├── lattice.py         DAYS, SLOTS, validation, slot_bounds
-│   │   ├── cell_parser.py     "CSE414(62_E1)" + "SRH" → fields
-│   │   ├── grid_reader.py     walk cells, expand merged ranges
+│   │   ├── cell_parser.py     "CSE322(66_B1)" + "AAM" → fields
+│   │   ├── pdf_reader.py      read tables, carry the day across pages
 │   │   ├── normalizer.py      clean rooms, split name/initial
 │   │   └── pipeline.py        orchestrate + atomic version swap
 │   ├── services/            query logic, no HTTP
@@ -81,11 +77,11 @@ class ClassSession:
     room:         str      # "KT-503"          — normalised
     room_type:    str      # "Theory" | "Computer Lab"
 
-    course_code:  str      # "CSE414(62_E1)"   — FUSED, kept intact
+    course_code:  str      # "CSE322(66_B1)"   — FUSED, kept intact
     course_title: str | None
-    teacher:      str      # "SRH", or "TBA"
-    batch:        str      # "62_E"            — derived
-    section:      str      # "62_E1"           — derived
+    teacher:      str      # "AAM", or "TBA"
+    batch:        str      # "66_B"            — derived
+    section:      str      # "66_B1"           — derived
     is_lab:       bool     # section has a subsection suffix
     is_optional:  bool     # course_code starts with "TCSE"
 
@@ -127,21 +123,60 @@ Interval arithmetic (`start < query_end AND end > query_start`) looks more gener
 
 ## Ingestion
 
+The department publishes the routine as a **PDF with a real text layer and real
+ruling lines** — not a scan — so `pdfplumber` recovers the table directly. **No
+OCR is involved.**
+
 ```
-.xlsx → detect layout → validate lattice → walk grid → parse cells → normalise → atomic swap
+.pdf → extract tables → validate lattice → parse cells → normalise → atomic swap
 ```
 
-- **Merged cells are expanded.** A lab spanning two slots, or a day label spanning its block of rows, is one merged cell whose value openpyxl reports only at the top-left corner. Unexpanded, those classes vanish silently — the failure mode most likely to go unnoticed.
+Three properties of the real document drive the design:
+
+- **It is one continuous table.** A day begins partway down a page and flows across page breaks, so days cannot be inferred from page boundaries — the current day is carried forward until a day-header row changes it. The day label lands in an arbitrary column, so it is searched for rather than assumed.
+- **The room repeats in all six slot columns.** A row is six independent `(room, course, teacher)` triples, not one room with six classes.
+- **The room cell carries its type on a second line** — `"KT-503\n(COM LAB)"` — which is exactly the artifact the app we studied never strips.
+
+Handling:
+
 - **Validation fails loudly.** If the six slot columns are not found, the import is rejected. A routine that imports with a shifted column is worse than one that refuses to import.
-- **Unparseable cells are reported, not dropped.** `IngestionReport.skipped_cells` records each one with its row, column and text.
+- **Deliberate non-classes are counted separately.** A room marked `Reserved` is information, not a broken cell, so `skipped` keeps meaning "needs a human look".
+- **Unparseable cells are reported, not dropped**, with page, day, slot and room.
 - **The swap is atomic.** A revision is written to a new `routine_id` and only becomes active once the whole import succeeds.
 
-> ⚠️ **The exact published DIU layout has not been verified against a real file.** The reader expects a day-blocked grid (day column, room column, six slot columns) and locates the axes by inspection. Validate against a real routine before trusting an import in production.
+### Course-code grammar
+
+Every shape below appears in the published Summer-2026 routine:
+
+| Cell | Meaning |
+|---|---|
+| `CSE315(66_E)` | theory class for section 66_E |
+| `CSE322(66_B1)` | lab subsection 1 of section 66_B |
+| `CSE213(RE_A(3C))` | retake section A, 3 credits — **nested brackets** |
+| `CSE124(RE_A1(1.5C))` | retake, lab subsection, fractional credit |
+| `CSE311(RE_B)` | retake, no credit annotation |
+| `CSE324(RE_A1(2C)` | **unbalanced** — a typo in the source, still parsed |
+| `CSE47164_P)` | **missing bracket** — recovered as `CSE471(64_P)` |
+
+Teacher initials are mostly plain letters but carry disambiguating suffixes
+(`NT_2`, `MNT_2`, `NT-1`). A blank teacher becomes `TBA`.
+
+### Verified against the real document
+
+`CSE Class Routine V5 Summer-2026.pdf` (10 pages) ingests as:
+
+```
+2002 sessions from 2009 cells · 6 reserved · 1 skipped
+Saturday 323 · Sunday 374 · Monday 371 · Tuesday 372 · Wednesday 366 · Thursday 196
+72 rooms · 164 batches · 222 teachers · 754 lab sessions
+```
+
+The single skipped cell is a stray backslash in the source document.
 
 ## Development
 
 ```bash
-pytest -q                              # 86 tests
+pytest -q                              # 123 tests
 ruff check src tests && ruff format --check src tests
 mypy src                               # strict
 alembic upgrade head                   # production schema

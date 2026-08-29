@@ -34,13 +34,17 @@ void main() {
       // The four queries must work against server-supplied data, not just
       // hand-written fixtures.
       final students = await repo.studentSchedule(
-        '60_C',
+        '66_B',
         includeOptional: true,
       );
       expect(students, isNotEmpty);
       expect(students.first.courseCode, contains('('));
+      // Room names must arrive clean: the PDF writes "KT-503\n(COM LAB)" in a
+      // single cell, and the annotation belongs in roomType, not the name.
+      expect(students.every((s) => !s.room.contains('\n')), isTrue);
+      expect(students.any((s) => s.roomType != 'Theory'), isTrue);
 
-      final teachers = await repo.teacherSchedule('SRH', includeOptional: true);
+      final teachers = await repo.teacherSchedule('AAM', includeOptional: true);
       expect(teachers, isNotEmpty);
 
       final free = await repo.freeRooms('08:30-10:00');

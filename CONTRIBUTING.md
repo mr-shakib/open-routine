@@ -51,7 +51,7 @@ These come out of the analysis and exist to prevent real bugs. Changing them nee
 1. **`time_slot` is a label, not a time.** It is stored verbatim and compared with `==`. Derived `start`/`end` columns exist for display, sorting and "happening now" — they must **never** become the occupancy test. Interval arithmetic reintroduces every edge case the lattice model avoids.
 2. **`course_code` stays fused.** Keep `CSE414(62_E1)` as the source token. Derive `batch` and `section` *alongside* it, never by destroying it.
 3. **Ingestion validates loudly.** If the six slot labels don't match, fail the import. Never partially import a routine.
-4. **Expand merged cells.** A lab spanning two slots is one merged cell in the spreadsheet. Emit one record per covered slot or classes vanish silently.
+4. **The routine PDF is one continuous table.** Days start partway down a page and flow across page breaks, and the day label lands in an arbitrary column. Never infer the day from the page number.
 5. **Offline-first.** Every query must be answerable from the local database with no network. The network only refreshes the snapshot.
 
 ## Code style
@@ -63,7 +63,12 @@ Both run in CI; please run them locally first.
 
 ## Tests
 
-- **Ingestion parser changes require a fixture test.** Add a small `.xlsx` under `backend/tests/fixtures/` covering the case, including the awkward ones: merged cells, `TBA` teachers, `TCSE` electives, lab subsections.
+- **Ingestion parser changes require a fixture test.** Add the case to `backend/tests/fixtures/rows.py`, which mirrors the real PDF's table shape. Cover the awkward ones: nested brackets in retake codes, unbalanced brackets, `Reserved` holds, lab subsections, teacher initials with numeric suffixes.
+- **Validate against a real routine** before trusting a parser change:
+  ```bash
+  OPEN_ROUTINE_TEST_PDF="CSE Class Routine V5 Summer-2026.pdf" pytest -q
+  ```
+  The routine PDF is university material and is not committed to this repository.
 - Query logic changes need unit tests for the four query types.
 - Bug fixes should come with a regression test.
 

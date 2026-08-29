@@ -21,7 +21,7 @@ async def test_lattice_is_exposed_as_a_constant(client: AsyncClient) -> None:
 
 async def test_current_routine(client: AsyncClient) -> None:
     body = (await client.get(f"{API}/routines/current", params={"department": "cse"})).json()
-    assert body["version"] == "5.1"
+    assert body["version"] == "5"
     assert body["is_active"] is True
     assert body["session_count"] == 12
 
@@ -33,16 +33,16 @@ async def test_unknown_department_returns_a_clean_error(client: AsyncClient) -> 
 
 
 async def test_student_schedule(client: AsyncClient) -> None:
-    body = (await client.get(f"{API}/schedule/student/60_C")).json()
-    assert body["query"] == "60_C"
-    assert body["count"] == 7
+    body = (await client.get(f"{API}/schedule/student/66_E")).json()
+    assert body["query"] == "66_E"
+    assert body["count"] == 5
     assert list(body["days"]) == list(DAYS)
-    assert sorted(body["teachers"]) == ["MAH", "NRC"]
+    assert sorted(body["teachers"]) == ["AS", "MAH"]
 
 
 async def test_student_schedule_groups_by_day(client: AsyncClient) -> None:
-    days = (await client.get(f"{API}/schedule/student/60_C")).json()["days"]
-    assert len(days["Saturday"]) == 2
+    days = (await client.get(f"{API}/schedule/student/66_E")).json()["days"]
+    assert len(days["Saturday"]) == 1
     assert days["Wednesday"] == []
 
 
@@ -54,16 +54,16 @@ async def test_student_schedule_can_hide_optional_courses(client: AsyncClient) -
 
 
 async def test_teacher_schedule(client: AsyncClient) -> None:
-    body = (await client.get(f"{API}/schedule/teacher/SRH")).json()
-    assert body["count"] == 4
+    body = (await client.get(f"{API}/schedule/teacher/AAM")).json()
+    assert body["count"] == 5
     every = [s for day in body["days"].values() for s in day]
-    assert {s["teacher"] for s in every} == {"SRH"}
+    assert {s["teacher"] for s in every} == {"AAM"}
 
 
 async def test_course_code_reaches_the_client_fused(client: AsyncClient) -> None:
-    body = (await client.get(f"{API}/schedule/teacher/SRH")).json()
+    body = (await client.get(f"{API}/schedule/teacher/AAM")).json()
     codes = {s["course_code"] for day in body["days"].values() for s in day}
-    assert codes == {"CSE414(62_E1)", "CSE414(62_E2)"}
+    assert codes == {"CSE322(66_B1)", "CSE322(66_B2)"}
 
 
 async def test_free_rooms(client: AsyncClient) -> None:
@@ -85,8 +85,8 @@ async def test_room_search_occupied(client: AsyncClient) -> None:
         await client.get(f"{API}/rooms/KT-503", params={"day": "Saturday", "slot": "08:30-10:00"})
     ).json()
     assert body["occupied"] is True
-    assert body["sessions"][0]["course_code"] == "CSE414(62_E1)"
-    assert body["sessions"][0]["batch"] == "62_E"
+    assert body["sessions"][0]["course_code"] == "CSE322(66_B1)"
+    assert body["sessions"][0]["batch"] == "66_B"
 
 
 async def test_room_search_free(client: AsyncClient) -> None:
@@ -115,8 +115,8 @@ async def test_snapshot_carries_the_whole_routine(client: AsyncClient) -> None:
 
 
 async def test_autocomplete(client: AsyncClient) -> None:
-    body = (await client.get(f"{API}/search/autocomplete", params={"q": "60"})).json()
-    assert "60_C" in body["batches"]
+    body = (await client.get(f"{API}/search/autocomplete", params={"q": "66"})).json()
+    assert "66_E" in body["batches"]
 
 
 async def test_autocomplete_only_suggests_what_exists(client: AsyncClient) -> None:

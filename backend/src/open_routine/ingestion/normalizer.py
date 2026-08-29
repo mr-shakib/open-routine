@@ -1,4 +1,4 @@
-"""Clean values lifted straight out of spreadsheet cells.
+"""Clean values lifted straight out of the routine PDF's table cells.
 
 Cell text arrives with the artifacts of its origin. The app we studied never
 stripped them: its published room list contains keys like ``"KT-503\\n  (COM
@@ -10,11 +10,21 @@ from __future__ import annotations
 
 import re
 
-#: Room type markers that appear appended to a room's name in the sheet.
-_LAB_MARKERS = ("COM LAB", "COMPUTER LAB", "LAB")
-
 ROOM_TYPE_THEORY = "Theory"
 ROOM_TYPE_COMPUTER_LAB = "Computer Lab"
+ROOM_TYPE_PHYSICS_LAB = "Physics Lab"
+ROOM_TYPE_ELECTRICAL_LAB = "Electrical Lab"
+ROOM_TYPE_LAB = "Lab"
+
+#: Annotations the published routine appends under a room name, longest first so
+#: a specific match wins over the generic "LAB".
+_ROOM_TYPE_MARKERS: tuple[tuple[str, str], ...] = (
+    ("COMPUTER LAB", ROOM_TYPE_COMPUTER_LAB),
+    ("COM LAB", ROOM_TYPE_COMPUTER_LAB),
+    ("PHYSICS LAB", ROOM_TYPE_PHYSICS_LAB),
+    ("ELECTRICAL", ROOM_TYPE_ELECTRICAL_LAB),
+    ("LAB", ROOM_TYPE_LAB),
+)
 
 
 def normalise_whitespace(value: str) -> str:
@@ -27,24 +37,39 @@ def normalise_whitespace(value: str) -> str:
 def normalise_room(raw: str) -> tuple[str, str]:
     """Split a room cell into ``(room, room_type)``.
 
-    ``"KT-503\\n  (COM LAB)"`` becomes ``("KT-503", "Computer Lab")``. A room with
-    no marker is Theory.
+    The published PDF puts a room's type on a second line inside the same cell,
+    so ``"KT-503\\n(COM LAB)"`` arrives as one string. Splitting it here means
+    every downstream comparison runs on a clean room name -- the app we studied
+    never does this, and ships room keys with the newline still embedded.
+
+    ``"G1-020\\n(Physics Lab)"`` becomes ``("G1-020", "Physics Lab")``.
     """
-    flat = normalise_whitespace(raw).upper()
-    if not flat:
+    if not raw:
         return "", ROOM_TYPE_THEORY
 
+    # The name is the first line; anything below it annotates the room.
+    lines = [ln.strip() for ln in str(raw).replace("\xa0", " ").splitlines() if ln.strip()]
+    if not lines:
+        return "", ROOM_TYPE_THEORY
+
+    name = normalise_whitespace(lines[0]).upper()
+    annotation = " ".join(lines[1:]).upper()
+
+    # Some cells append the annotation inline rather than wrapping it, but a
+    # room legitimately named "KT-517(A)" must not lose its suffix -- so only
+    # split when the bracketed part actually names a room type.
+    if not annotation and "(" in name:
+        head, _, tail = name.partition("(")
+        if any(marker in tail for marker, _type in _ROOM_TYPE_MARKERS):
+            name, annotation = head.strip(), tail
+
     room_type = ROOM_TYPE_THEORY
-    for marker in _LAB_MARKERS:
-        # Match the marker only when parenthesised or trailing, so a room
-        # legitimately named "LAB-2" is not misread.
-        pattern = re.compile(rf"\(?\s*{re.escape(marker)}\s*\)?\s*$")
-        if pattern.search(flat):
-            room_type = ROOM_TYPE_COMPUTER_LAB
-            flat = pattern.sub("", flat).strip()
+    for marker, resolved in _ROOM_TYPE_MARKERS:
+        if marker in annotation:
+            room_type = resolved
             break
 
-    return flat.strip(" -"), room_type
+    return name.strip(" -"), room_type
 
 
 def normalise_initial(raw: str) -> str:
