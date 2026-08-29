@@ -33,6 +33,20 @@ final studentScheduleProvider = FutureProvider<List<ClassSession>>((ref) async {
       .studentSchedule(batch, includeOptional: !hideOptional);
 });
 
+/// Day list or week grid. Persisted, because it is a preference rather than a
+/// transient mode -- people tend to favour one and stay there.
+class ScheduleViewMode extends Notifier<bool> {
+  @override
+  bool build() => ref.watch(settingsProvider.select((s) => s.weekView));
+
+  Future<void> set({required bool weekView}) async {
+    state = weekView;
+    await ref.read(settingsProvider.notifier).setWeekView(value: weekView);
+  }
+}
+
+final weekViewProvider = NotifierProvider<ScheduleViewMode, bool>(ScheduleViewMode.new);
+
 final batchSuggestionsProvider = FutureProvider.family<List<String>, String>((
   ref,
   query,

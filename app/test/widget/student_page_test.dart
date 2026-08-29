@@ -65,7 +65,7 @@ void main() {
 
     // Saturday holds two 60_C classes in the fixture.
     expect(find.byType(ClassCard), findsNWidgets(2));
-    expect(find.text('CSE332(60_C)'), findsOneWidget);
+    expect(find.text('CSE332'), findsOneWidget);
   });
 
   testWidgets('switching day re-renders that day only', (tester) async {
@@ -77,7 +77,7 @@ void main() {
 
     // Monday has exactly one 60_C class.
     expect(find.byType(ClassCard), findsOneWidget);
-    expect(find.text('CSE311(60_C)'), findsOneWidget);
+    expect(find.text('CSE311'), findsOneWidget);
   });
 
   testWidgets(
@@ -110,8 +110,10 @@ void main() {
     // different rooms, so both belong on the same day. Collapsing them would
     // hide half the section's classes.
     expect(find.byType(ClassCard), findsNWidgets(2));
-    expect(find.text('CSE414(62_E1)'), findsOneWidget);
-    expect(find.text('CSE414(62_E2)'), findsOneWidget);
+    expect(find.text('CSE414'), findsNWidgets(2));
+    // The section is what distinguishes them, so it must be visible.
+    expect(find.text('62_E1'), findsOneWidget);
+    expect(find.text('62_E2'), findsOneWidget);
   });
 
   testWidgets('unknown batch reports it rather than showing an empty list', (
@@ -149,5 +151,24 @@ void main() {
         .read(settingsProvider.notifier)
         .setHideOptional(value: true);
     expect(await container.read(studentScheduleProvider.future), isEmpty);
+  });
+
+  testWidgets('typing over an existing batch replaces it rather than appending',
+      (tester) async {
+    // Tapping a filled field puts the cursor at the end, so without
+    // select-on-focus "60_C" typed over "66_B" becomes "66_B60_C".
+    await tester.pumpWidget(await harness(db, batch: '60_C'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(TextField));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '62_E');
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+
+    expect(find.text('No classes for 60_C62_E'), findsNothing);
+    await tester.tap(find.text('Sat'));
+    await tester.pumpAndSettle();
+    expect(find.text('62_E1'), findsOneWidget);
   });
 }

@@ -27,10 +27,40 @@ class _RoutineSearchFieldState extends ConsumerState<RoutineSearchField> {
   late final TextEditingController _controller = TextEditingController(
     text: widget.initialValue,
   );
+  final FocusNode _focus = FocusNode();
   List<String> _matches = const [];
 
   @override
+  void initState() {
+    super.initState();
+    // Focusing a field that already holds a value should offer to replace it,
+    // not append to it. Without this, tapping in and typing "60_C" over "66_B"
+    // silently produces "66_B60_C".
+    _focus.addListener(() {
+      if (_focus.hasFocus && _controller.text.isNotEmpty) {
+        _controller.selection = TextSelection(
+          baseOffset: 0,
+          extentOffset: _controller.text.length,
+        );
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(RoutineSearchField old) {
+    super.didUpdateWidget(old);
+    // Keep in step when the value is changed from elsewhere, such as tapping a
+    // recent chip.
+    if (widget.initialValue != old.initialValue &&
+        widget.initialValue != _controller.text) {
+      _controller.text = widget.initialValue;
+      setState(() => _matches = const []);
+    }
+  }
+
+  @override
   void dispose() {
+    _focus.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -60,6 +90,7 @@ class _RoutineSearchFieldState extends ConsumerState<RoutineSearchField> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: TextField(
             controller: _controller,
+            focusNode: _focus,
             textCapitalization: TextCapitalization.characters,
             textInputAction: TextInputAction.search,
             decoration: InputDecoration(
