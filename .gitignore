@@ -42,3 +42,7 @@ GoogleService-Info.plist
 *.iml
 .DS_Store
 Thumbs.db
+
+# Local databases produced by the backend
+backend/*.db
+backend/alembic_tmp.db

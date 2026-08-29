@@ -1,0 +1,25 @@
+# Local development stack. SQLite needs no service, so this is just the API;
+# uncomment the db service to develop against Postgres instead.
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      OPEN_ROUTINE_DATABASE_URL: sqlite+aiosqlite:////data/open_routine.db
+      OPEN_ROUTINE_ENVIRONMENT: development
+      OPEN_ROUTINE_ADMIN_TOKEN: ${OPEN_ROUTINE_ADMIN_TOKEN:-dev-token}
+    volumes:
+      - routine-data:/data
+
+  # db:
+  #   image: postgres:17-alpine
+  #   environment:
+  #     POSTGRES_PASSWORD: postgres
+  #     POSTGRES_DB: open_routine
+  #   ports: ["5432:5432"]
+  #   volumes: [pg-data:/var/lib/postgresql/data]
+
+volumes:
+  routine-data:
+  # pg-data:
