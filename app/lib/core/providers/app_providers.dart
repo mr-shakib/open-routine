@@ -30,9 +30,15 @@ final routineRepositoryProvider = Provider<RoutineRepository>(
 );
 
 /// The routine revision stored on this device.
-final localRoutineProvider = FutureProvider<RoutineInfo?>(
-  (ref) => ref.watch(routineRepositoryProvider).localRoutine(),
-);
+///
+/// Waits for the in-flight sync before reading. Without that it resolves once
+/// at startup, before the first download has finished, and then reports "nothing
+/// downloaded yet" for the rest of the session even though the schedule is
+/// visibly working.
+final localRoutineProvider = FutureProvider<RoutineInfo?>((ref) async {
+  await ref.watch(syncControllerProvider.future);
+  return ref.watch(routineRepositoryProvider).localRoutine();
+});
 
 /// Drives the "checking / updated / offline" banner and the first-run download.
 class SyncController extends AsyncNotifier<SyncResult> {

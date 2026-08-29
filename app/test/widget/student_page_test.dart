@@ -58,6 +58,11 @@ void main() {
     await tester.pumpWidget(await harness(db, batch: '60_C'));
     await tester.pumpAndSettle();
 
+    // The page opens on today, so select a day explicitly rather than assuming
+    // one -- otherwise this passes only on Saturdays.
+    await tester.tap(find.text('Sat'));
+    await tester.pumpAndSettle();
+
     // Saturday holds two 60_C classes in the fixture.
     expect(find.byType(ClassCard), findsNWidgets(2));
     expect(find.text('CSE332(60_C)'), findsOneWidget);
@@ -96,6 +101,9 @@ void main() {
 
     await tester.enterText(find.byType(TextField), '62_E');
     await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Sat'));
     await tester.pumpAndSettle();
 
     // 62_E splits into two lab subsections that run simultaneously in
