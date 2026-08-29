@@ -54,7 +54,7 @@ OPEN_ROUTINE_CORS_ORIGINS=*
 ENV
 chmod 600 "$APP_DIR/.env"
 
-docker compose -f deploy/compose.prod.yaml --env-file "$APP_DIR/.env" up -d --build
+docker compose -f deploy/compose.prod.yaml --project-directory "$APP_DIR" --env-file "$APP_DIR/.env" up -d --build
 
 # Restart the stack on boot.
 cat > /etc/systemd/system/open-routine.service <<UNIT
@@ -67,8 +67,8 @@ After=docker.service network-online.target
 Type=oneshot
 RemainAfterExit=yes
 WorkingDirectory=$APP_DIR
-ExecStart=/usr/bin/docker compose -f deploy/compose.prod.yaml --env-file $APP_DIR/.env up -d
-ExecStop=/usr/bin/docker compose -f deploy/compose.prod.yaml --env-file $APP_DIR/.env down
+ExecStart=/usr/bin/docker compose -f deploy/compose.prod.yaml --project-directory $APP_DIR --env-file $APP_DIR/.env up -d
+ExecStop=/usr/bin/docker compose -f deploy/compose.prod.yaml --project-directory $APP_DIR --env-file $APP_DIR/.env down
 
 [Install]
 WantedBy=multi-user.target
@@ -87,7 +87,7 @@ for i in $(seq 1 40); do
   fi
   sleep 5
 done
-docker compose -f deploy/compose.prod.yaml --env-file "$APP_DIR/.env" ps --format '{{.Service}} {{.Status}}' || true
+docker compose -f deploy/compose.prod.yaml --project-directory "$APP_DIR" --env-file "$APP_DIR/.env" ps --format '{{.Service}} {{.Status}}' || true
 for i in $(seq 1 40); do
   CODE=$(curl -sk -o /dev/null -w '%{http_code}' --max-time 8 "https://$DOMAIN/api/v1/health" 2>/dev/null || echo 000)
   echo "tls check $i: https://$DOMAIN -> $CODE"

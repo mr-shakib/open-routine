@@ -109,10 +109,17 @@ class LatticeResponse(BaseModel):
 
 
 class IngestionResponse(BaseModel):
+    """What an import did. Mirrors what the CLI prints."""
+
     department: str
     version: str
+    effective_from: str | None = None
     routine_id: int | None
     cells_read: int
     sessions_created: int
-    skipped: int
-    skipped_sample: list[dict[str, object]]
+    days_covered: dict[str, int] = Field(default_factory=dict)
+    reserved: int = Field(
+        0, description="Cells deliberately holding no class, e.g. a room marked Reserved."
+    )
+    skipped: int = Field(0, description="Cells that could not be parsed. Worth a human look.")
+    skipped_sample: list[dict[str, object]] = Field(default_factory=list)

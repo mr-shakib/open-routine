@@ -1,7 +1,5 @@
-{
-	# Empty is fine: Caddy registers an ACME account without contact details.
-	email {$ACME_EMAIL}
-}
+# No global options block: an `email` directive with an empty value is a parse
+# error, and Caddy registers an ACME account fine without contact details.
 
 {$ROUTINE_DOMAIN} {
 	encode zstd gzip

@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -24,7 +24,9 @@ class Settings(BaseSettings):
     database_url: str = "sqlite+aiosqlite:///./open_routine.db"
     db_echo: bool = False
 
-    cors_origins: list[str] = Field(default_factory=lambda: ["*"])
+    #: NoDecode keeps pydantic-settings from JSON-parsing this before the
+    #: validator below runs, so a plain "a,b" or "*" works from the environment.
+    cors_origins: Annotated[list[str], NoDecode] = Field(default_factory=lambda: ["*"])
 
     #: Bearer token guarding write endpoints. Empty disables them entirely,
     #: which is the safe default: a misconfigured deployment cannot be written to.

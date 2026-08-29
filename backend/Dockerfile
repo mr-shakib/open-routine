@@ -11,8 +11,18 @@ COPY pyproject.toml README.md ./
 COPY src ./src
 RUN pip install --no-cache-dir .
 
-# Run as a non-root user.
-RUN useradd --create-home --uid 10001 app && chown -R app:app /app
+# Alembic needs its config and revision scripts at runtime, not just at build.
+COPY alembic.ini ./
+COPY migrations ./migrations
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+
+# Run as a non-root user. /data must exist and be owned by that user *in the
+# image*: a named volume mounted there inherits the image directory's ownership,
+# and without this the app cannot create its SQLite file.
+RUN mkdir -p /data \
+    && useradd --create-home --uid 10001 app \
+    && chmod +x /usr/local/bin/docker-entrypoint.sh \
+    && chown -R app:app /app /data
 USER app
 
 EXPOSE 8000
@@ -20,4 +30,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s \
     CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health').status==200 else 1)"
 
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["uvicorn", "open_routine.main:app", "--host", "0.0.0.0", "--port", "8000"]
