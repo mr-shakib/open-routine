@@ -53,7 +53,9 @@ class TeacherProfile extends StatelessWidget {
                     children: [
                       Text(
                         teacher?.name ?? initial,
-                        style: text.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                        style: text.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       const SizedBox(height: 3),
                       // The initial is what the routine keys on, so show it
@@ -64,14 +66,17 @@ class TeacherProfile extends StatelessWidget {
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           _Tag(label: initial, emphasis: true),
-                          if (teacher?.department != null) _Tag(label: teacher!.department!),
+                          if (teacher?.department != null)
+                            _Tag(label: teacher!.department!),
                         ],
                       ),
                       if (teacher?.designation != null) ...[
                         const SizedBox(height: 6),
                         Text(
                           teacher!.designation!,
-                          style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+                          style: text.bodyMedium?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
                         ),
                       ],
                       if (teacher?.officeRoom != null) ...[
@@ -79,12 +84,17 @@ class TeacherProfile extends StatelessWidget {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.meeting_room_outlined,
-                                size: 15, color: scheme.onSurfaceVariant),
+                            Icon(
+                              Icons.meeting_room_outlined,
+                              size: 15,
+                              color: scheme.onSurfaceVariant,
+                            ),
                             const SizedBox(width: 5),
                             Text(
                               'Office ${teacher!.officeRoom}',
-                              style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                              style: text.bodySmall?.copyWith(
+                                color: scheme.onSurfaceVariant,
+                              ),
                             ),
                           ],
                         ),
@@ -99,12 +109,18 @@ class TeacherProfile extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Icon(Icons.info_outline, size: 15, color: scheme.onSurfaceVariant),
+                  Icon(
+                    Icons.info_outline,
+                    size: 15,
+                    color: scheme.onSurfaceVariant,
+                  ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       'Not in the faculty directory — showing schedule only.',
-                      style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                      style: text.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 ],
@@ -124,11 +140,23 @@ class TeacherProfile extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 14),
-              _Detail(icon: Icons.menu_book_outlined, label: 'Courses', values: courses),
+              _Detail(
+                icon: Icons.menu_book_outlined,
+                label: 'Courses',
+                values: courses,
+              ),
               const SizedBox(height: 8),
-              _Detail(icon: Icons.groups_outlined, label: 'Sections', values: batches),
+              _Detail(
+                icon: Icons.groups_outlined,
+                label: 'Sections',
+                values: batches,
+              ),
               const SizedBox(height: 8),
-              _Detail(icon: Icons.place_outlined, label: 'Rooms', values: rooms),
+              _Detail(
+                icon: Icons.place_outlined,
+                label: 'Rooms',
+                values: rooms,
+              ),
             ],
           ],
         ),
@@ -218,9 +246,9 @@ class _Stat extends StatelessWidget {
           ),
           Text(
             label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: scheme.onSurfaceVariant,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -229,7 +257,11 @@ class _Stat extends StatelessWidget {
 }
 
 class _Detail extends StatelessWidget {
-  const _Detail({required this.icon, required this.label, required this.values});
+  const _Detail({
+    required this.icon,
+    required this.label,
+    required this.values,
+  });
   final IconData icon;
   final String label;
   final Set<String> values;
@@ -251,9 +283,9 @@ class _Detail extends StatelessWidget {
           width: 66,
           child: Text(
             label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: scheme.onSurfaceVariant,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
           ),
         ),
         Expanded(

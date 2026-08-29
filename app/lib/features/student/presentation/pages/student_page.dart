@@ -46,7 +46,8 @@ class _StudentPageState extends ConsumerState<StudentPage> {
         RoutineSearchField(
           hint: 'Batch, e.g. 66_B',
           initialValue: batch,
-          suggestions: (q) => ref.read(routineRepositoryProvider).batchSuggestions(q),
+          suggestions: (q) =>
+              ref.read(routineRepositoryProvider).batchSuggestions(q),
           onSubmit: _search,
         ),
 
@@ -54,7 +55,8 @@ class _StudentPageState extends ConsumerState<StudentPage> {
           batches: recents,
           current: batch,
           onSelect: _search,
-          onRemove: (b) => ref.read(settingsProvider.notifier).removeRecentBatch(b),
+          onRemove: (b) =>
+              ref.read(settingsProvider.notifier).removeRecentBatch(b),
         ),
 
         const SizedBox(height: 12),
@@ -75,7 +77,8 @@ class _StudentPageState extends ConsumerState<StudentPage> {
                 return EmptyState(
                   icon: Icons.search_off,
                   title: 'No classes for $batch',
-                  message: 'Check the batch, or sync if the routine was just published.',
+                  message:
+                      'Check the batch, or sync if the routine was just published.',
                 );
               }
               return _Body(
@@ -252,7 +255,10 @@ class _Entrance extends StatelessWidget {
       curve: Curves.easeOutCubic,
       builder: (context, t, child) => Opacity(
         opacity: t,
-        child: Transform.translate(offset: Offset(0, 14 * (1 - t)), child: child),
+        child: Transform.translate(
+          offset: Offset(0, 14 * (1 - t)),
+          child: child,
+        ),
       ),
       child: child,
     );

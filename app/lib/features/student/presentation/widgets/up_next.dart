@@ -26,7 +26,8 @@ class UpNext extends StatelessWidget {
   static ClassSession? _next(List<ClassSession> today, int minutes) {
     ClassSession? best;
     for (final s in today) {
-      if (s.startMin > minutes && (best == null || s.startMin < best.startMin)) {
+      if (s.startMin > minutes &&
+          (best == null || s.startMin < best.startMin)) {
         best = s;
       }
     }
@@ -57,7 +58,10 @@ class UpNext extends StatelessWidget {
       curve: Curves.easeOutCubic,
       builder: (context, t, child) => Opacity(
         opacity: t,
-        child: Transform.translate(offset: Offset(0, 8 * (1 - t)), child: child),
+        child: Transform.translate(
+          offset: Offset(0, 8 * (1 - t)),
+          child: child,
+        ),
       ),
       child: Container(
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -107,9 +111,9 @@ class UpNext extends StatelessWidget {
             ),
             Text(
               prettySlot(session.timeSlot).split(' – ').first,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
             ),
           ],
         ),

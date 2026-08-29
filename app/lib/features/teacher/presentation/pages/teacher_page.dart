@@ -64,7 +64,8 @@ class _TeacherPageState extends ConsumerState<TeacherPage> {
                 return EmptyState(
                   icon: Icons.search_off,
                   title: 'No classes for $initial',
-                  message: 'That initial does not appear in the current routine.',
+                  message:
+                      'That initial does not appear in the current routine.',
                 );
               }
 
@@ -110,7 +111,8 @@ class _TeacherPageState extends ConsumerState<TeacherPage> {
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                         sliver: SliverList.separated(
                           itemCount: today.length,
-                          separatorBuilder: (_, _) => const SizedBox(height: 10),
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: 10),
                           itemBuilder: (context, i) => ClassCard(
                             session: today[i],
                             trailingLabel: today[i].section,

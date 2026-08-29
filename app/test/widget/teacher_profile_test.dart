@@ -15,7 +15,9 @@ const _srh = Teacher(
 
 Future<void> _pump(WidgetTester tester, Widget child) async {
   await tester.pumpWidget(
-    MaterialApp(home: Scaffold(body: SingleChildScrollView(child: child))),
+    MaterialApp(
+      home: Scaffold(body: SingleChildScrollView(child: child)),
+    ),
   );
   await tester.pumpAndSettle();
 }
@@ -24,7 +26,10 @@ void main() {
   final schedule = testSessions.where((s) => s.teacher == 'SRH').toList();
 
   testWidgets('shows the directory details', (tester) async {
-    await _pump(tester, TeacherProfile(initial: 'SRH', teacher: _srh, schedule: schedule));
+    await _pump(
+      tester,
+      TeacherProfile(initial: 'SRH', teacher: _srh, schedule: schedule),
+    );
 
     expect(find.text('Dr. Sheak Rashed Haider Noori'), findsOneWidget);
     expect(find.text('Professor & Head'), findsOneWidget);
@@ -37,7 +42,10 @@ void main() {
   });
 
   testWidgets('summarises the workload from the schedule', (tester) async {
-    await _pump(tester, TeacherProfile(initial: 'SRH', teacher: _srh, schedule: schedule));
+    await _pump(
+      tester,
+      TeacherProfile(initial: 'SRH', teacher: _srh, schedule: schedule),
+    );
 
     expect(find.text('${schedule.length}'), findsWidgets);
     expect(find.text('classes'), findsOneWidget);
@@ -47,26 +55,37 @@ void main() {
   });
 
   testWidgets('lists the rooms and sections they appear in', (tester) async {
-    await _pump(tester, TeacherProfile(initial: 'SRH', teacher: null, schedule: schedule));
+    await _pump(
+      tester,
+      TeacherProfile(initial: 'SRH', teacher: null, schedule: schedule),
+    );
 
     expect(find.text('Courses'), findsOneWidget);
     expect(find.text('Sections'), findsOneWidget);
     expect(find.text('Rooms'), findsOneWidget);
   });
 
-  testWidgets('an unknown teacher still gets their schedule, with the gap stated',
-      (tester) async {
-    await _pump(tester, TeacherProfile(initial: 'ZZZ', teacher: null, schedule: schedule));
+  testWidgets(
+    'an unknown teacher still gets their schedule, with the gap stated',
+    (tester) async {
+      await _pump(
+        tester,
+        TeacherProfile(initial: 'ZZZ', teacher: null, schedule: schedule),
+      );
 
-    expect(find.text('ZZZ'), findsWidgets);
-    expect(
-      find.text('Not in the faculty directory — showing schedule only.'),
-      findsOneWidget,
-    );
-  });
+      expect(find.text('ZZZ'), findsWidgets);
+      expect(
+        find.text('Not in the faculty directory — showing schedule only.'),
+        findsOneWidget,
+      );
+    },
+  );
 
   testWidgets('no schedule means no workload block', (tester) async {
-    await _pump(tester, const TeacherProfile(initial: 'ZZZ', teacher: null, schedule: []));
+    await _pump(
+      tester,
+      const TeacherProfile(initial: 'ZZZ', teacher: null, schedule: []),
+    );
 
     expect(find.text('classes'), findsNothing);
     expect(find.text('Rooms'), findsNothing);

@@ -136,7 +136,8 @@ class ClassCard extends StatelessWidget {
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      session.courseTitle ?? session.baseCourseCode,
+                                      session.courseTitle ??
+                                          session.baseCourseCode,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: text.titleMedium?.copyWith(
@@ -202,7 +203,8 @@ class ClassCard extends StatelessWidget {
                                           ? 'Lab'
                                           : 'Lab group ${session.subsection}',
                                     ),
-                                  if (session.isOptional) const _Tag(label: 'Optional'),
+                                  if (session.isOptional)
+                                    const _Tag(label: 'Optional'),
                                   if (session.roomType != 'Theory')
                                     _Tag(label: session.roomType),
                                 ],

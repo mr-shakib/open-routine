@@ -32,14 +32,18 @@ class FreeGap extends StatelessWidget {
           const SizedBox(width: 14),
           SizedBox(
             height: 30,
-            child: VerticalDivider(color: scheme.outlineVariant, width: 12, thickness: 1),
+            child: VerticalDivider(
+              color: scheme.outlineVariant,
+              width: 12,
+              thickness: 1,
+            ),
           ),
           const SizedBox(width: 8),
           Text(
             _label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: scheme.onSurfaceVariant,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
           ),
         ],
       ),

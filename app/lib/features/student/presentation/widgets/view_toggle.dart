@@ -5,7 +5,11 @@ import 'package:flutter/material.dart';
 /// A sliding pill rather than two buttons: the movement makes the relationship
 /// between the two views legible, and it is the same gesture cost either way.
 class ViewToggle extends StatelessWidget {
-  const ViewToggle({required this.weekView, required this.onChanged, super.key});
+  const ViewToggle({
+    required this.weekView,
+    required this.onChanged,
+    super.key,
+  });
 
   final bool weekView;
   final ValueChanged<bool> onChanged;
@@ -28,7 +32,9 @@ class ViewToggle extends StatelessWidget {
               AnimatedAlign(
                 duration: const Duration(milliseconds: 220),
                 curve: Curves.easeOutCubic,
-                alignment: weekView ? Alignment.centerRight : Alignment.centerLeft,
+                alignment: weekView
+                    ? Alignment.centerRight
+                    : Alignment.centerLeft,
                 child: Container(
                   width: w,
                   height: double.infinity,

@@ -139,7 +139,11 @@ class _DayHeader extends StatelessWidget {
 }
 
 class _Cell extends StatelessWidget {
-  const _Cell({required this.sessions, required this.isToday, required this.onTap});
+  const _Cell({
+    required this.sessions,
+    required this.isToday,
+    required this.onTap,
+  });
 
   final List<ClassSession> sessions;
   final bool isToday;
@@ -177,7 +181,10 @@ class _Cell extends StatelessWidget {
             child: !busy
                 ? const SizedBox.shrink()
                 : Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 6,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -186,10 +193,11 @@ class _Cell extends StatelessWidget {
                           first!.baseCourseCode,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            color: accent,
-                            fontWeight: FontWeight.w700,
-                          ),
+                          style: Theme.of(context).textTheme.labelMedium
+                              ?.copyWith(
+                                color: accent,
+                                fontWeight: FontWeight.w700,
+                              ),
                         ),
                         const SizedBox(height: 2),
                         Text(
@@ -198,10 +206,11 @@ class _Cell extends StatelessWidget {
                               : first.room,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: scheme.onSurfaceVariant,
-                            fontSize: 11,
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: scheme.onSurfaceVariant,
+                                fontSize: 11,
+                              ),
                         ),
                       ],
                     ),

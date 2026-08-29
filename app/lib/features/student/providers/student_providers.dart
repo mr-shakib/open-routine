@@ -45,7 +45,9 @@ class ScheduleViewMode extends Notifier<bool> {
   }
 }
 
-final weekViewProvider = NotifierProvider<ScheduleViewMode, bool>(ScheduleViewMode.new);
+final weekViewProvider = NotifierProvider<ScheduleViewMode, bool>(
+  ScheduleViewMode.new,
+);
 
 final batchSuggestionsProvider = FutureProvider.family<List<String>, String>((
   ref,

@@ -153,22 +153,24 @@ void main() {
     expect(await container.read(studentScheduleProvider.future), isEmpty);
   });
 
-  testWidgets('typing over an existing batch replaces it rather than appending',
-      (tester) async {
-    // Tapping a filled field puts the cursor at the end, so without
-    // select-on-focus "60_C" typed over "66_B" becomes "66_B60_C".
-    await tester.pumpWidget(await harness(db, batch: '60_C'));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'typing over an existing batch replaces it rather than appending',
+    (tester) async {
+      // Tapping a filled field puts the cursor at the end, so without
+      // select-on-focus "60_C" typed over "66_B" becomes "66_B60_C".
+      await tester.pumpWidget(await harness(db, batch: '60_C'));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.byType(TextField));
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), '62_E');
-    await tester.testTextInput.receiveAction(TextInputAction.search);
-    await tester.pumpAndSettle();
+      await tester.tap(find.byType(TextField));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), '62_E');
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pumpAndSettle();
 
-    expect(find.text('No classes for 60_C62_E'), findsNothing);
-    await tester.tap(find.text('Sat'));
-    await tester.pumpAndSettle();
-    expect(find.text('62_E1'), findsOneWidget);
-  });
+      expect(find.text('No classes for 60_C62_E'), findsNothing);
+      await tester.tap(find.text('Sat'));
+      await tester.pumpAndSettle();
+      expect(find.text('62_E1'), findsOneWidget);
+    },
+  );
 }

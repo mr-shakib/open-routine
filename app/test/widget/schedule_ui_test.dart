@@ -70,7 +70,10 @@ void main() {
       bool? got;
       await _pump(
         tester,
-        SizedBox(width: 300, child: ViewToggle(weekView: false, onChanged: (v) => got = v)),
+        SizedBox(
+          width: 300,
+          child: ViewToggle(weekView: false, onChanged: (v) => got = v),
+        ),
       );
 
       await tester.tap(find.text('Week'));
@@ -104,7 +107,9 @@ void main() {
       expect(tapped, 'Monday');
     });
 
-    testWidgets('collapses simultaneous lab groups into one cell', (tester) async {
+    testWidgets('collapses simultaneous lab groups into one cell', (
+      tester,
+    ) async {
       // 62_E1 and 62_E2 run at the same time in different rooms; the cell says
       // how many rather than pretending there is one.
       final clash = [

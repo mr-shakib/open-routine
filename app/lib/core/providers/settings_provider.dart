@@ -115,12 +115,16 @@ class SettingsNotifier extends Notifier<Settings> {
   Future<void> removeRecentBatch(String batch) async {
     final recents = state.recentBatches.where((b) => b != batch).toList();
     state = state.copyWith(recentBatches: recents);
-    await ref.read(sharedPreferencesProvider).setStringList(_kRecentBatches, recents);
+    await ref
+        .read(sharedPreferencesProvider)
+        .setStringList(_kRecentBatches, recents);
   }
 
   Future<void> clearRecentBatches() async {
     state = state.copyWith(recentBatches: const []);
-    await ref.read(sharedPreferencesProvider).setStringList(_kRecentBatches, const []);
+    await ref
+        .read(sharedPreferencesProvider)
+        .setStringList(_kRecentBatches, const []);
   }
 
   Future<void> setWeekView({required bool value}) async {
