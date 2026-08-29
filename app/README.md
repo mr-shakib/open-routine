@@ -174,10 +174,49 @@ Reminders are planned from the local database, so they keep working offline.
 
 > ⚠️ The planning logic is tested; **actual delivery on a device is not yet verified.**
 
+## Releasing
+
+The app talks to the deployed backend, so a release build must be given its URL:
+
+```bash
+flutter build appbundle --release \
+  --dart-define=OPEN_ROUTINE_API=https://routine.bitstreamhq.com   # Play Store
+
+flutter build apk --release --split-per-abi \
+  --dart-define=OPEN_ROUTINE_API=https://routine.bitstreamhq.com   # direct download
+```
+
+Per-ABI APKs are ~20 MB each; the fat APK is ~58 MB because it carries every
+architecture. Nearly all of it is the Flutter engine (11 MB) and compiled Dart
+(6.4 MB) — there is nothing to trim.
+
+Release builds are minified and resource-shrunk with R8. `proguard-rules.pro`
+keeps the Flutter engine, keeps `flutter_local_notifications`' Gson models (they
+are deserialised reflectively, so shrinking them stops reminders firing after a
+reboot), and silences Play Core's deferred-component references, which the
+embedding names but this app never uses.
+
+### Signing
+
+> ⚠️ **Back up the keystore and its password.** If either is lost, this app can
+> never be updated on Play again — a new key means a new listing and every user
+> reinstalling from scratch.
+
+| | |
+|---|---|
+| Keystore | `~/.android-keystores/open-routine-release.p12` (PKCS12, RSA-4096, valid to 2054) |
+| Credentials | `android/key.properties` — gitignored, never committed |
+| Certificate SHA-256 | `34:1D:29:6B:94:E1:4B:C0:A2:43:14:68:12:C9:21:46:83:C2:35:9E:31:E6:58:2D:A5:50:C7:34:78:13:A2:AD` |
+
+A contributor without `key.properties` still gets a working `--release` build,
+signed with debug keys: usable for testing, not publishable. That is deliberate,
+so the repository is usable by people who hold no signing key.
+
 ## Platform notes
 
-- `minSdk` is raised to 23 and core-library desugaring enabled, both required by `flutter_local_notifications`.
-- The application id is `dev.openroutine.open_routine` — a placeholder. **Change it before publishing; it is permanent.**
+- `minSdk` is 23 with core-library desugaring, both required by `flutter_local_notifications`.
+- Application id `dev.openroutine.open_routine`. **This is permanent once published** — change it now if you want something else.
+- Debug builds permit cleartext HTTP so a local backend works; release builds keep Android's strict default, which is why the production URL must be `https://`.
 
 ## Accessibility
 

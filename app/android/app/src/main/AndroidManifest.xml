@@ -6,7 +6,7 @@
     <!-- Re-arm reminders after a reboot. -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <application
-        android:label="open_routine"
+        android:label="Open Routine"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
