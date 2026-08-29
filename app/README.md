@@ -2,7 +2,7 @@
 
 Flutter client. Android and iOS. Offline-first: every query runs against a local database.
 
-> **Status: structure only.** No code yet. This README is the specification the implementation will follow.
+> **Status: implemented.** Four views, offline-first sync, 56 tests. `flutter analyze` clean, debug APK builds.
 
 ## Stack
 
@@ -11,9 +11,8 @@ Flutter client. Android and iOS. Offline-first: every query runs against a local
 | Framework | **Flutter 3.44+** | one codebase, real native performance |
 | State | **Riverpod** | compile-safe, testable, no BuildContext gymnastics |
 | Local DB | **Drift** (SQLite) | typed queries, real indexes, migrations |
-| HTTP | **Dio** + generated client from the backend's OpenAPI | no hand-written DTOs to drift out of sync |
+| HTTP | **Dio** | thin hand-written client -- only two calls matter, so a code generator would add tooling for no gain |
 | Models | **freezed** + **json_serializable** | immutable, exhaustive |
-| Routing | **go_router** | deep links |
 | Notifications | **flutter_local_notifications** + **timezone** | class reminders |
 | Testing | `flutter_test`, `mocktail` | |
 
@@ -80,6 +79,32 @@ class ClassSessions extends Table {
 
 ⚠️ `timeSlot` is the occupancy key, compared with `=`. `startMin`/`endMin` are for "happening now" and sorting only.
 
+## Running it
+
+```bash
+flutter pub get
+dart run build_runner build --delete-conflicting-outputs
+
+# point at a backend (defaults to http://localhost:8000)
+flutter run --dart-define=OPEN_ROUTINE_API=http://127.0.0.1:8000
+```
+
+On an Android emulator the host is reached at `10.0.2.2`; `RoutineApi` rewrites
+`localhost` automatically, so the default works there too.
+
+```bash
+flutter test        # 56 tests
+flutter analyze     # clean
+```
+
+The live-backend test is skipped unless asked for:
+
+```bash
+flutter test test/integration/live_backend_test.dart \
+  --dart-define=LIVE_BACKEND=true \
+  --dart-define=OPEN_ROUTINE_API=http://127.0.0.1:8077
+```
+
 ## Sync strategy
 
 ```
@@ -120,11 +145,26 @@ customSelect('''
 ''');
 ```
 
+## Class reminders
+
+Split deliberately in two:
+
+- **`ReminderPlanner`** decides *which* reminders to schedule and when. It is pure — no platform calls, no clock of its own — so the interesting logic is unit-tested: the rolling window, the lead time, weekday mapping, stable ids.
+- **`NotificationService`** hands that plan to the OS. Thin, and untestable off a real device.
+
+Two constraints shaped the design:
+
+- **iOS caps pending notifications at 64.** A whole semester of a 6 × 6 routine blows past it, so the planner emits a **rolling 7-day window** capped at 60, topped up on launch.
+- **Android 12+ gates exact alarms** behind a runtime permission. The service uses `inexactAllowWhileIdle` rather than requesting it: a reminder a few minutes early beats no reminder, and it never throws.
+
+Reminders are planned from the local database, so they keep working offline.
+
+> ⚠️ The planning logic is tested; **actual delivery on a device is not yet verified.**
+
 ## Platform notes
 
-- **Android 12+** needs `SCHEDULE_EXACT_ALARM` for precise class reminders. Degrade gracefully to inexact alarms if the user denies it — don't block the app.
-- **iOS caps pending notifications at 64.** A full 6 × 6 semester of reminders exceeds that. Schedule a **rolling window** (the next 7 days) and top it up on launch, rather than scheduling everything.
-- **Reminders are built from local data**, so they keep working with no network.
+- `minSdk` is raised to 23 and core-library desugaring enabled, both required by `flutter_local_notifications`.
+- The application id is `dev.openroutine.open_routine` — a placeholder. **Change it before publishing; it is permanent.**
 
 ## Accessibility
 

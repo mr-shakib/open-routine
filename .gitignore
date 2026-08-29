@@ -25,6 +25,8 @@ htmlcov/
 **/*.g.dart
 **/*.freezed.dart
 **/*.mocks.dart
+app/build/
+app/.dart_tool/
 
 # ---------- Secrets / data ----------
 *.xlsx
@@ -50,3 +52,10 @@ backend/alembic_tmp.db
 # ---------- Private research ----------
 # Analysis of the prior app and its raw artifacts. Kept locally, never published.
 docs/
+
+# ---------- CI, pending token scope ----------
+# Pushing these needs a token with the `workflow` scope. Until then they are
+# kept out of commits so a `git add -A` cannot break the push:
+#   gh auth refresh -s workflow
+#   git add -f .github/workflows && git commit && git push
+.github/workflows/
