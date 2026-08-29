@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
+import json
 import tempfile
 from pathlib import Path
 
 from fastapi import APIRouter, File, Form, UploadFile
 
 from open_routine.api.deps import AdminDep, SessionDep
+from open_routine.core.errors import ValidationError
 from open_routine.ingestion import ingest_pdf
+from open_routine.ingestion.normalizer import split_name_initial
 from open_routine.schemas import IngestionResponse
+from open_routine.services import teacher_service
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -49,3 +53,62 @@ async def ingest(
     finally:
         tmp_path.unlink(missing_ok=True)
     return IngestionResponse.model_validate(report.as_dict())
+
+
+@router.post("/teachers", summary="Load the faculty directory")
+async def load_teachers(
+    session: SessionDep,
+    _: AdminDep,
+    file: UploadFile = File(description="Faculty directory JSON."),
+) -> dict[str, int]:
+    """Replace the faculty directory.
+
+    Accepts either this project's shape (``initial``/``name``) or the
+    ``Name_Initial`` shape the university publishes.
+
+    Only what the app displays is stored -- name, designation, department,
+    office room and photo. Phone numbers and email addresses present in the
+    source file are deliberately dropped rather than served.
+    """
+    try:
+        raw = json.loads((await file.read()).decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValidationError(f"Could not read the directory as JSON: {exc}") from exc
+
+    if not isinstance(raw, list):
+        raise ValidationError("Expected a JSON array of faculty records.")
+
+    records: list[dict[str, str | None]] = []
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        if "Name_Initial" in item:
+            name, initial = split_name_initial(str(item["Name_Initial"]))
+            records.append(
+                {
+                    "initial": initial,
+                    "name": name,
+                    "designation": item.get("Designation"),
+                    "department": item.get("Department"),
+                    "office_room": item.get("Assigned Room Number"),
+                    "image_url": item.get("Image"),
+                }
+            )
+        else:
+            records.append(
+                {
+                    k: item.get(k)
+                    for k in (
+                        "initial",
+                        "name",
+                        "designation",
+                        "department",
+                        "office_room",
+                        "image_url",
+                    )
+                }
+            )
+
+    written = await teacher_service.upsert_teachers(session, records)
+    await session.commit()
+    return {"received": len(raw), "stored": written}

@@ -5,12 +5,12 @@ import '../../../../core/providers/app_providers.dart';
 import '../../../../core/providers/settings_provider.dart';
 import '../../../../core/utils/lattice.dart';
 import '../../../../data/datasources/local/database.dart';
-import '../../../../domain/entities/teacher.dart';
 import '../../../shell/presentation/widgets/class_card.dart';
 import '../../../shell/presentation/widgets/day_selector.dart';
 import '../../../shell/presentation/widgets/search_field.dart';
 import '../../../shell/presentation/widgets/states.dart';
 import '../../providers/teacher_providers.dart';
+import '../widgets/teacher_profile.dart';
 
 /// Teacher view: enter an initial, see that teacher's week.
 ///
@@ -47,7 +47,6 @@ class _TeacherPageState extends ConsumerState<TeacherPage> {
                 .setSavedTeacher(value.toUpperCase());
           },
         ),
-        if (details != null) _TeacherHeader(teacher: details),
         const SizedBox(height: 12),
         Expanded(
           child: schedule.when(
@@ -61,12 +60,11 @@ class _TeacherPageState extends ConsumerState<TeacherPage> {
                   message: 'Enter an initial above, for example SRH.',
                 );
               }
-              if (sessions.isEmpty) {
+              if (sessions.isEmpty && details == null) {
                 return EmptyState(
                   icon: Icons.search_off,
                   title: 'No classes for $initial',
-                  message:
-                      'That initial does not appear in the current routine.',
+                  message: 'That initial does not appear in the current routine.',
                 );
               }
 
@@ -74,91 +72,59 @@ class _TeacherPageState extends ConsumerState<TeacherPage> {
               final today = byDay[_day] ?? const [];
               final now = DateTime.now();
 
-              return Column(
-                children: [
-                  DaySelector(
-                    selected: _day,
-                    onSelect: (d) => setState(() => _day = d),
-                    countFor: (d) => byDay[d]?.length ?? 0,
+              // One scroll view: the profile scrolls away as you read down into
+              // the week, rather than eating a fixed slice of a small screen.
+              return CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                      child: TeacherProfile(
+                        initial: initial,
+                        teacher: details,
+                        schedule: sessions,
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: 12),
-                  Expanded(
-                    child: today.isEmpty
-                        ? const EmptyState(
+                  if (sessions.isNotEmpty) ...[
+                    SliverToBoxAdapter(
+                      child: DaySelector(
+                        selected: _day,
+                        onSelect: (d) => setState(() => _day = d),
+                        countFor: (d) => byDay[d]?.length ?? 0,
+                      ),
+                    ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 12)),
+                    if (today.isEmpty)
+                      const SliverToBoxAdapter(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 36),
+                          child: EmptyState(
                             icon: Icons.free_breakfast_outlined,
                             title: 'No classes',
-                          )
-                        : ListView.separated(
-                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                            itemCount: today.length,
-                            separatorBuilder: (_, _) =>
-                                const SizedBox(height: 10),
-                            itemBuilder: (context, i) => ClassCard(
-                              session: today[i],
-                              trailingLabel: today[i].section,
-                              isLive: today[i].isLiveAt(now),
-                            ),
                           ),
-                  ),
+                        ),
+                      )
+                    else
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                        sliver: SliverList.separated(
+                          itemCount: today.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 10),
+                          itemBuilder: (context, i) => ClassCard(
+                            session: today[i],
+                            trailingLabel: today[i].section,
+                            isLive: today[i].isLiveAt(now),
+                          ),
+                        ),
+                      ),
+                  ],
                 ],
               );
             },
           ),
         ),
       ],
-    );
-  }
-}
-
-class _TeacherHeader extends StatelessWidget {
-  const _TeacherHeader({required this.teacher});
-  final Teacher teacher;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: scheme.surfaceContainerHighest,
-            foregroundImage: teacher.imageUrl == null
-                ? null
-                : NetworkImage(teacher.imageUrl!),
-            child: Text(
-              teacher.initial,
-              style: Theme.of(context).textTheme.labelMedium,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  teacher.name,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-                ),
-                if (teacher.designation != null)
-                  Text(
-                    [
-                      teacher.designation,
-                      if (teacher.officeRoom != null)
-                        'Room ${teacher.officeRoom}',
-                    ].join(' · '),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
