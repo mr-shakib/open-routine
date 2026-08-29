@@ -1,0 +1,83 @@
+# Contributing to Open Routine
+
+Thanks for helping out. This project is aimed at DIU students, and contributions from students are especially welcome.
+
+## Before you start
+
+Read **[docs/HOW_THE_EXISTING_APP_WORKS.md](docs/HOW_THE_EXISTING_APP_WORKS.md)**. It explains the problem, the prior art, and *why* the architecture is the way it is. Part 1 takes five minutes and requires no background.
+
+## Repository layout
+
+```
+open-routine/
+├── backend/     FastAPI service — ingestion + API      (independent project)
+├── app/         Flutter client  — Android + iOS        (independent project)
+├── docs/        architecture and research
+└── .github/     CI and issue templates
+```
+
+`backend/` and `app/` are separate projects with separate toolchains, tests and CI. Work on one without installing the other.
+
+## Setup
+
+**Backend** — Python 3.12+ (3.14 recommended):
+
+```bash
+cd backend
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+pytest
+uvicorn open_routine.main:app --reload
+```
+
+**App** — Flutter 3.35+ (3.44 recommended):
+
+```bash
+cd app
+flutter pub get
+dart run build_runner build --delete-conflicting-outputs
+flutter test
+flutter run
+```
+
+## Non-negotiable design rules
+
+These come out of the analysis and exist to prevent real bugs. Changing them needs discussion in an issue first.
+
+1. **`time_slot` is a label, not a time.** It is stored verbatim and compared with `==`. Derived `start`/`end` columns exist for display, sorting and "happening now" — they must **never** become the occupancy test. Interval arithmetic reintroduces every edge case the lattice model avoids.
+2. **`course_code` stays fused.** Keep `CSE414(62_E1)` as the source token. Derive `batch` and `section` *alongside* it, never by destroying it.
+3. **Ingestion validates loudly.** If the six slot labels don't match, fail the import. Never partially import a routine.
+4. **Expand merged cells.** A lab spanning two slots is one merged cell in the spreadsheet. Emit one record per covered slot or classes vanish silently.
+5. **Offline-first.** Every query must be answerable from the local database with no network. The network only refreshes the snapshot.
+
+## Code style
+
+**Python** — `ruff` (lint + format), `mypy --strict` on `src/`. Type-annotate everything.
+**Dart** — `dart format`, `flutter analyze` clean. Follow [Effective Dart](https://dart.dev/effective-dart).
+
+Both run in CI; please run them locally first.
+
+## Tests
+
+- **Ingestion parser changes require a fixture test.** Add a small `.xlsx` under `backend/tests/fixtures/` covering the case, including the awkward ones: merged cells, `TBA` teachers, `TCSE` electives, lab subsections.
+- Query logic changes need unit tests for the four query types.
+- Bug fixes should come with a regression test.
+
+## Commits and PRs
+
+[Conventional Commits](https://www.conventionalcommits.org/): `feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `chore:`.
+
+Keep PRs focused. Describe what changed and why. Link the issue. If you touched ingestion, say which fixture proves it.
+
+## Reporting a routine parsing bug
+
+The most valuable bug reports. Please include:
+
+- the routine **version** and department
+- the batch / teacher / room affected
+- what the app showed vs. what the official routine says
+- the source file if you can share it
+
+## Code of conduct
+
+By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
