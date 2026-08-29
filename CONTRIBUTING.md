@@ -4,7 +4,12 @@ Thanks for helping out. This project is aimed at DIU students, and contributions
 
 ## Before you start
 
-Read **[docs/HOW_THE_EXISTING_APP_WORKS.md](docs/HOW_THE_EXISTING_APP_WORKS.md)**. It explains the problem, the prior art, and *why* the architecture is the way it is. Part 1 takes five minutes and requires no background.
+Two facts about the source data explain most of the architecture:
+
+1. **The routine is a fixed 6 x 6 lattice** — six working days (Saturday–Thursday) by six fixed 90-minute slots. Every class occupies exactly one cell. So ingestion is a grid walk, not layout inference.
+2. **Because slots are atomic, two classes can never partially overlap.** Occupancy is therefore decided by string equality on the slot label, and no interval arithmetic exists anywhere in the codebase.
+
+Read [backend/README.md](backend/README.md) for the data model and the ingestion contract before changing either.
 
 ## Repository layout
 
@@ -12,7 +17,6 @@ Read **[docs/HOW_THE_EXISTING_APP_WORKS.md](docs/HOW_THE_EXISTING_APP_WORKS.md)*
 open-routine/
 ├── backend/     FastAPI service — ingestion + API      (independent project)
 ├── app/         Flutter client  — Android + iOS        (independent project)
-├── docs/        architecture and research
 └── .github/     CI and issue templates
 ```
 

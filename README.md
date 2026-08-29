@@ -4,7 +4,7 @@
 
 Type your batch — `60_C` — and your week appears. Instantly, offline, with no account required.
 
-> ⚠️ **Status: pre-alpha.** No application code has been written yet. The repository currently contains the research and architecture that the implementation will follow. Start with **[docs/HOW_THE_EXISTING_APP_WORKS.md](docs/HOW_THE_EXISTING_APP_WORKS.md)**.
+> ⚠️ **Status: early.** The backend is implemented and tested; the Flutter app is scaffolded but not yet built. See [backend/README.md](backend/README.md) to run the API.
 
 ---
 
@@ -51,14 +51,16 @@ DIU routine spreadsheet (.xlsx, versioned per semester)
 
 ## The core idea, in one paragraph
 
-The DIU routine is a **fixed 6 × 6 lattice** — six working days (Saturday–Thursday) × six fixed 90-minute slots. Every class occupies exactly one cell. So ingestion is a grid walk, not layout inference; and because slots are atomic, *"is this room busy?"* is answered by **string equality on the slot label**, never by interval arithmetic. That single property is what makes the whole system fast and, more importantly, correct. The full reasoning is in [the docs](docs/HOW_THE_EXISTING_APP_WORKS.md#-there-is-no-overlap-logic-anywhere).
+The DIU routine is a **fixed 6 × 6 lattice** — six working days (Saturday–Thursday) × six fixed 90-minute slots. Every class occupies exactly one cell. So ingestion is a grid walk, not layout inference; and because slots are atomic, *"is this room busy?"* is answered by **string equality on the slot label**, never by interval arithmetic. That single property is what makes the whole system fast and, more importantly, correct.
+
+The practical consequence: **never replace the slot-label comparison with interval arithmetic.** Storing real start/end times and testing `start < query_end AND end > query_start` looks more general, but it reintroduces an entire class of edge cases that the lattice removes for free. `start_min`/`end_min` exist for display and sorting only.
 
 ## Documentation
 
 | Document | What it covers |
 |---|---|
-| **[How the existing app works](docs/HOW_THE_EXISTING_APP_WORKS.md)** | The problem and the prior art, explained at three levels: plain-English, developer, and expert. **Read this first.** |
-| [docs/evidence/](docs/evidence/) | Raw public artifacts the analysis was built on |
+| [backend/README.md](backend/README.md) | Running the API, the data model, the ingestion contract |
+| [app/README.md](app/README.md) | The Flutter client's architecture and local schema |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How to set up, and how to send a change |
 | [SECURITY.md](SECURITY.md) | Reporting a vulnerability |
 

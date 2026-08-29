@@ -46,3 +46,7 @@ Thumbs.db
 # Local databases produced by the backend
 backend/*.db
 backend/alembic_tmp.db
+
+# ---------- Private research ----------
+# Analysis of the prior app and its raw artifacts. Kept locally, never published.
+docs/

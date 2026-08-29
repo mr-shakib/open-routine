@@ -100,7 +100,9 @@ INDEX (routine_id, room, day, time_slot)     room search
 INDEX (routine_id, day, time_slot)           empty slots
 ```
 
-> ⚠️ **`time_slot` is the occupancy key and is compared with `==`.** `start_min`/`end_min` exist for display, sorting and "what is on right now". They must **never** become the occupancy test — see [the docs](../docs/HOW_THE_EXISTING_APP_WORKS.md#-there-is-no-overlap-logic-anywhere). `test_occupancy_is_exact_slot_equality_not_overlap` guards this.
+> ⚠️ **`time_slot` is the occupancy key and is compared with `==`.** `start_min`/`end_min` exist for display, sorting and "what is on right now". They must **never** become the occupancy test.
+
+Interval arithmetic (`start < query_end AND end > query_start`) looks more general, but the lattice already guarantees classes cannot partially overlap — so it buys nothing and reintroduces edge cases. `test_occupancy_is_exact_slot_equality_not_overlap` guards this.
 
 ## API
 
