@@ -39,6 +39,7 @@ open-routine = "open_routine.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/open_routine"]
+artifacts = ["src/open_routine/static/*.html"]
 
 # ----------------------------------------------------------------------------
 

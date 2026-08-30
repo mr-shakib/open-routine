@@ -12,8 +12,8 @@ from open_routine.api.deps import AdminDep, SessionDep
 from open_routine.core.errors import ValidationError
 from open_routine.ingestion import ingest_pdf
 from open_routine.ingestion.normalizer import split_name_initial
-from open_routine.schemas import IngestionResponse
-from open_routine.services import teacher_service
+from open_routine.schemas import IngestionResponse, RoutineOut
+from open_routine.services import routine_service, teacher_service
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -112,3 +112,25 @@ async def load_teachers(
     written = await teacher_service.upsert_teachers(session, records)
     await session.commit()
     return {"received": len(raw), "stored": written}
+
+
+@router.post(
+    "/routines/{routine_id}/activate",
+    response_model=RoutineOut,
+    summary="Publish a routine revision",
+)
+async def activate(session: SessionDep, _: AdminDep, routine_id: int) -> RoutineOut:
+    """Make this revision the one clients receive.
+
+    Separate from importing on purpose: an import can be inspected first, and a
+    bad one simply never gets published. Switching back to an earlier revision
+    is the same call, so a rollback is one click rather than a re-upload.
+    """
+    return RoutineOut.model_validate(await routine_service.activate_routine(session, routine_id))
+
+
+@router.delete("/routines/{routine_id}", summary="Delete a routine revision")
+async def remove(session: SessionDep, _: AdminDep, routine_id: int) -> dict[str, str]:
+    """Delete a revision that is not live."""
+    await routine_service.delete_routine(session, routine_id)
+    return {"status": "deleted"}

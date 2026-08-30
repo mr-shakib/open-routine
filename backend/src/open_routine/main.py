@@ -5,9 +5,11 @@ from __future__ import annotations
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
 from open_routine import __version__
 from open_routine.api.v1.router import api_router
@@ -73,12 +75,28 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_exception_handlers(app)
     app.include_router(api_router, prefix=settings.api_v1_prefix)
 
+    @app.get("/admin", include_in_schema=False)
+    async def admin_console() -> FileResponse:
+        """The admin console.
+
+        Served from the API itself rather than the marketing site: same origin,
+        so the token never crosses domains and there is no CORS surface, and it
+        ships with the API so the two can never drift apart. Every action it
+        performs is an ordinary authenticated call to /api/v1/admin.
+        """
+        return FileResponse(
+            Path(__file__).parent / "static" / "admin.html",
+            media_type="text/html",
+            headers={"Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow"},
+        )
+
     @app.get("/", include_in_schema=False)
     async def root() -> dict[str, str]:
         return {
             "name": settings.project_name,
             "version": __version__,
             "docs": "/docs",
+            "admin": "/admin",
             "api": settings.api_v1_prefix,
         }
 

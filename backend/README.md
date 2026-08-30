@@ -116,6 +116,10 @@ Interval arithmetic (`start < query_end AND end > query_start`) looks more gener
 | `GET` | `/api/v1/meta/teachers` | faculty directory |
 | `GET` | `/api/v1/search/autocomplete?q=` | typeahead |
 | `POST` | `/api/v1/admin/ingest` | upload a routine (bearer token) |
+| `POST` | `/api/v1/admin/teachers` | load the faculty directory |
+| `POST` | `/api/v1/admin/routines/{id}/activate` | publish a revision, or roll back |
+| `DELETE` | `/api/v1/admin/routines/{id}` | delete a revision that is not live |
+| `GET` | `/admin` | the admin console |
 
 `/routines/{id}/snapshot` is what makes the app offline-first: the client downloads it once, writes it to its local database, and answers everything locally until `version` changes.
 
