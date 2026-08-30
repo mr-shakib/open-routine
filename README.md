@@ -4,8 +4,6 @@
 
 Type your batch — `60_C` — and your week appears. Instantly, offline, with no account required.
 
-> ⚠️ **Status: early.** The backend is implemented and tested; the Flutter app is scaffolded but not yet built. See [backend/README.md](backend/README.md) to run the API.
-
 ---
 
 ## What it does
